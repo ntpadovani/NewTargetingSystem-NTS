@@ -28,15 +28,21 @@ let target = {
     y: Math.random() * canvas.height
 };
 
+// Load the image
+let missileImage = new Image();
+missileImage.src = "missile.png";
+
+// Update drawObjects function
 function drawObjects() {
     // Clear the canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw the missile
-    ctx.beginPath();
-    ctx.arc(missile.x, missile.y, 10, 0, Math.PI * 2, false);
-    ctx.fillStyle = "white";
-    ctx.fill();
+   // Draw the missile
+   ctx.save();  // Save the current state of the canvas
+   ctx.translate(missile.x, missile.y);  // Move the origin to the missile's location
+   ctx.rotate(Math.atan2(missile.dy, missile.dx) + Math.PI/2);  // Rotate the canvas by the angle of movement
+   ctx.drawImage(missileImage, -missileImage.width / 2, -missileImage.height / 2);  // Draw the missile centered at the new origin
+   ctx.restore();  // Restore the canvas state to how it was before we moved the origin
 
     // Draw the target
     ctx.beginPath();
@@ -47,6 +53,7 @@ function drawObjects() {
 
 // Initial drawing of objects
 drawObjects();
+
 
 function updateMissilePosition() {
     // Calculate direction vector from missile to target
@@ -70,3 +77,4 @@ function updateMissilePosition() {
 
 // Call updateMissilePosition every 20ms
 setInterval(updateMissilePosition, 20);
+
