@@ -13,7 +13,7 @@ body {
 
 #explosion {
     width: 240px;  /* The width of a single frame */
-    height: 240px;  /* The height of a single frame */
+    height: 300px;  /* The height of a single frame */
     background-image: url('explosion.png');
     background-repeat: no-repeat;
     background-position: 0 0;

@@ -8,15 +8,15 @@ let ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-// Draw a circle on the canvas
+// Draw a circle on the canvas (missile)
 ctx.beginPath();
 ctx.arc(100, 100, 50, 0, Math.PI * 2, false);
 ctx.fillStyle = "white";
 ctx.fill();
 
-let collision = false;
+let collision = false; //variable to manage collision
 
-let missile = {
+let missile = { //missile object
     x: canvas.width / 2,
     y: canvas.height,
     speed: 4,
@@ -32,13 +32,13 @@ let target = {
 
 // Here I Load the images
 let missileImage = new Image();
-let explosionImage = new Image();
+let targetDestroyed = new Image();
 
 // Count how many images have been loaded
 let imagesLoaded = 0;
 
 // Set up the onload function for both images
-missileImage.onload = explosionImage.onload = function() {
+missileImage.onload = targetDestroyed.onload = function() {
     imagesLoaded++;
 
     // If both images have been loaded, start the simulation
@@ -50,7 +50,7 @@ missileImage.onload = explosionImage.onload = function() {
 
 // Set the src after setting up the onload function
 missileImage.src = "missile.png";
-explosionImage.src = "explosion.png";
+targetDestroyed.src = "targetDestroyed.png";
 
 
 
@@ -61,7 +61,7 @@ function drawObjects() {
 
     if (collision) {
         // Draw the explosion at the target's location
-        ctx.drawImage(explosionImage, target.x - 50, target.y - 50, 100, 100);
+        ctx.drawImage(targetDestroyed, target.x - 50, target.y - 50, 300, 100);
     } else {
         // Draw the missile
         ctx.save();  // Save the current state of the canvas
@@ -93,8 +93,9 @@ function updateMissilePosition() {
         let distance = Math.sqrt(dx * dx + dy * dy);
 
         // If distance is less than the sum of the radii, a collision has occurred
-        if (distance < 20 + 10) {
+        if (distance < 190 + 10) {
             collision = true;
+            animateExplosion();
         } else {
             // Normalize direction vector and multiply by speed
             missile.dx = (dx / distance) * missile.speed;
@@ -119,9 +120,10 @@ function animateExplosion() {
     explosion.style.top = `${target.y}px`;
 
     let frame = 0;
-    let numFrames = 7;  // The total number of frames in your sprite sheet
-    let frameWidth = 240;  // The width of each frame in your sprite sheet
-    let frameRate = 500;  // The time (in milliseconds) each frame should be shown
+    let numFrames = 7;  // The total number of frames in the sprite sheet
+    let frameWidth = 240;  // The width of each frame in the sprite sheet
+    //let frameHeight = 300; // The height of each frame in the sprite sheet
+    let frameRate = 50;  // The time (in milliseconds) each frame should be shown
 
     // This interval will run every 'frameRate' milliseconds
     let interval = setInterval(() => {
@@ -135,7 +137,7 @@ function animateExplosion() {
         } else {
             // Shift the background image to show the next frame
             // Note: Make sure the sprites in your sprite sheet are arranged horizontally
-            explosion.style.backgroundPosition = `${-frame * frameWidth}px 0px`;
+            explosion.style.backgroundPosition = `${-frame * frameWidth}px 0px`; //This is where the explosion animation displays
             explosion.style.display = 'block';
         }
     }, frameRate);
