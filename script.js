@@ -19,13 +19,13 @@ let collision = false; //variable to manage collision
 let missile = { //missile object
     x: canvas.width / 2,
     y: canvas.height,
-    speed: 4,
+    speed: 8,
     dx: 0,
     dy: 0,
     isConnected: true
 };
 
-let target = {
+let target = { //target object
     x: Math.random() * canvas.width,
     y: Math.random() * canvas.height
 };
@@ -37,37 +37,47 @@ let targetDestroyed = new Image();
 // Count how many images have been loaded
 let imagesLoaded = 0;
 
-// Set up the onload function for both images
-missileImage.onload = targetDestroyed.onload = function() {
+// Function to be called when an image is loaded
+function imageLoaded() {
     imagesLoaded++;
 
     // If both images have been loaded, start the simulation
     if (imagesLoaded === 2) {
         // Call updateMissilePosition every 20ms
-        setInterval(updateMissilePosition, 20);
+        setInterval(updateMissilePosition, 20); //To keep track of the missile trajectory 
     }
-};
+}
+
+// Set up the onload function for each image
+missileImage.onload = imageLoaded;
+targetDestroyed.onload = imageLoaded;
 
 // Set the src after setting up the onload function
 missileImage.src = "missile.png";
 targetDestroyed.src = "targetDestroyed.png";
 
+let explosionEnded = false; //variable to manage end of explosion
 
-
-// Update drawObjects function
 function drawObjects() {
     // Clear the canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     if (collision) {
-        // Draw the explosion at the target's location
-        ctx.drawImage(targetDestroyed, target.x - 50, target.y - 50, 300, 100);
+        if (curFrame >= frameCount - 1) {
+            explosionEnded = true;
+            // If the missile successfully destroys the target, show a message on location
+            ctx.drawImage(targetDestroyed, target.x - targetDestroyed.width / 2, target.y - targetDestroyed.height / 2);
+        } 
+        if (!explosionEnded) {
+            // Draw explosion
+            ctx.drawImage(exploAnim, srcX, srcY, exploWidth, exploHeight, exploX, exploY, exploWidth, exploHeight);
+        }
     } else {
         // Draw the missile
         ctx.save();  // Save the current state of the canvas
         ctx.translate(missile.x, missile.y);  // Move the origin to the missile's location
-        ctx.rotate(Math.atan2(missile.dy, missile.dx) + Math.PI/2);  // Rotate the canvas by the angle of movement
-        ctx.drawImage(missileImage, -missileImage.width / 2, -missileImage.height / 2);  // Draw the missile centered at the new origin
+        ctx.rotate(Math.atan2(missile.dy, missile.dx) + Math.PI/2);  // To rotate the missile by the angle of movement
+        ctx.drawImage(missileImage, -missileImage.width / 2, -missileImage.height / 2);  // Here I draw the missile centered at the new origin
         ctx.restore();  // Restore the canvas state to how it was before we moved the origin
 
         // Draw the target
@@ -78,13 +88,10 @@ function drawObjects() {
     }
 }
 
-// Initial drawing of objects
-drawObjects();
-
 
 function updateMissilePosition() {
-    // Only update position if there has been no collision
-    if (!collision) {
+    // Only update position if there has been no collision and explosion hasn't ended
+    if (!collision && !explosionEnded) {
         // Calculate direction vector from missile to target
         let dx = target.x - missile.x;
         let dy = target.y - missile.y;
@@ -93,9 +100,9 @@ function updateMissilePosition() {
         let distance = Math.sqrt(dx * dx + dy * dy);
 
         // If distance is less than the sum of the radii, a collision has occurred
-        if (distance < 190 + 10) {
+        if (distance < 190 + 10) { // I made some adjustments to make the missile explode at the tip
             collision = true;
-            animateExplosion();
+            startExplosion();
         } else {
             // Normalize direction vector and multiply by speed
             missile.dx = (dx / distance) * missile.speed;
@@ -105,40 +112,120 @@ function updateMissilePosition() {
             missile.x += missile.dx;
             missile.y += missile.dy;
         }
-    }
+    } 
 
-    // Redraw the objects with their new positions
-    drawObjects();
+    // If the explosion has not ended, keep drawing
+    if (!explosionEnded) {
+        drawObjects();
+    }
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+let exploCanvasWidth = 240; //The width of the canvas where I will display the explosion animation. Frams width
+let exploCanvasHeight = 300; //The Height of the canvas where I will display the explosion animation. Frames height
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+let spriteWidth = 1820; //The width of the spritesheet
+let spriteHeight = 320; //The Height of the spritesheet
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+let exploColumn = 7; //Represents the number of columns in the spritesheet. The individual frames of the animation
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+let trackRight = 0; //This will track movement to the right starting at the 0th position
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+let exploWidth = spriteWidth/exploColumn; //The width of a single sprite is the division of its width by the size of each frame
+let exploHeight = spriteHeight/1; //I wrote one since the sprite contains 1 row. If not it would be divided by the number of rows(a row variable)
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+let curFrame = 0; //The current frame to be displayed
+let frameCount = 7; //The number of frames
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+let exploX=0; //Coordinates to render the sprite
+let exploY=0; 
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+let srcX=0; //x and y coordinates of the canvas to get the single frame
+let srcY=0; 
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+let right = true; //Establishes that the movement is to the right at the start
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+let exploSpeed = 4; //The movement speed
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+let exploCanvas = document.getElementById('explosion'); // Get a reference to the canvas 
+exploCanvas.width = exploCanvasWidth;//Setting width and height of the canvas
+exploCanvas.height = exploCanvasHeight;
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+let exploAnim = new Image();//Creating an Image object for our animation
+exploAnim.src = "explosion.png";
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+let exploInterval; //To control the interval between frames
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+function updateFrame(){
+    // If we've shown all the frames, stop the explosion
+    if (curFrame >= frameCount - 1) {
+        stopExplosion();
+    } else {
+        // Updating the frame index 
+        curFrame++;
+        
+        // Calculating the x coordinate for spritesheet 
+        srcX = curFrame * exploWidth; 
+    }
 }
 
-// Call updateMissilePosition every 20ms
-setInterval(updateMissilePosition, 20);
+///////////////////////////////////////////////////////////////////////////////////////////////////
+function drawExplo() {
+    // Clear the already drawn sprite before rendering the new sprite
+    ctx.clearRect(exploX, exploY, exploWidth, exploHeight); 
 
-function animateExplosion() {
-    let explosion = document.getElementById('explosion');
-    explosion.style.left = `${target.x}px`;
-    explosion.style.top = `${target.y}px`;
+    // Updating the frame 
+    updateFrame();
 
-    let frame = 0;
-    let numFrames = 7;  // The total number of frames in the sprite sheet
-    let frameWidth = 240;  // The width of each frame in the sprite sheet
-    //let frameHeight = 300; // The height of each frame in the sprite sheet
-    let frameRate = 50;  // The time (in milliseconds) each frame should be shown
+    // Drawing the image 
+    ctx.drawImage(exploAnim, srcX, srcY, exploWidth, exploHeight, exploX, exploY, exploWidth, exploHeight);
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+function startExplosion() {
+    exploX = target.x - exploWidth / 2; // adjust these values as needed
+    exploY = target.y - exploHeight / 2;
+    exploInterval = setInterval(drawExplo, 100); // start the explosion animation
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+function stopExplosion() {
+    clearInterval(exploInterval); // stop the explosion animation
+    curFrame = 0; // reset the frame count
+
+    // Draw the "Target Destroyed" image
+    ctx.drawImage(targetDestroyed, target.x - 150, target.y - 50, 300, 100);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//The explosion animation function
+//function animateExplosion() {
+   //let explosion = document.getElementById('explosion');
+   // explosion.style.left = `${target.x - 50}px`;
+    //explosion.style.top = `${target.y - 150}px`;
+
+    //let frame = 0;
+    //let numFrames = 7;  // The total number of frames in the sprite sheet
+    //let frameWidth = 240;  // The width of each frame in the sprite sheet
+    //let frameRate = 100;  // The time (in milliseconds) each frame should be shown
 
     // This interval will run every 'frameRate' milliseconds
-    let interval = setInterval(() => {
-        frame++;
+    //let interval = setInterval(() => {
+       // frame++;
 
         // If we've shown all the frames, reset everything
-        if (frame >= numFrames) {
-            clearInterval(interval);
-            explosion.style.backgroundPosition = '0px 0px';
-            explosion.style.display = 'none';
-        } else {
+       // if (frame >= numFrames) {
+       //     clearInterval(interval);
+       //     explosion.style.backgroundPosition = '0px 0px';
+       //     explosion.style.display = 'none';
+       // } else {
             // Shift the background image to show the next frame
-            // Note: Make sure the sprites in your sprite sheet are arranged horizontally
-            explosion.style.backgroundPosition = `${-frame * frameWidth}px 0px`; //This is where the explosion animation displays
-            explosion.style.display = 'block';
-        }
-    }, frameRate);
-}
+       //     explosion.style.backgroundPosition = `${-frame * frameWidth}px 0px`; //This is where the explosion animation displays
+       //     explosion.style.display = 'block';
+      //  }
+  //  }, frameRate);
+//}
+
